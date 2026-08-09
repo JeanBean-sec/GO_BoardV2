@@ -1480,9 +1480,9 @@
         iconEl.removeAttribute("src");
         iconEl.style.display = "none";
       }
-      // if (!!trip.TripCancelled) {
-      //   iconEl.src = `${ASSET_BASE_URL}assets/nostation.png`;
-      // }
+      if (!!trip.TripCancelled) {
+        iconEl.src = `${ASSET_BASE_URL}assets/nostation.png`;
+      }
     }
 
     // Keep whichever segment was already showing (rather than snapping back
