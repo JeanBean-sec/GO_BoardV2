@@ -69,7 +69,7 @@
  */
 
 (function () {
-  const PROXY_URL = "http://localhost:8787/"; // swap for your deployed Worker URL when going live
+  const PROXY_URL = "https://go-boardv2.onrender.com/"; // swap for your deployed Worker URL when going live
   const POLL_MS = 20000; // 20s — matches the proxy's edge cache TTL
   const STOP_CYCLE_MS = 10000; // how often the stops field swaps to the next segment
   const ANNOUNCEMENT_CYCLE_MS = 12000; // how often the GO Transit announcement changes
