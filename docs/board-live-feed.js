@@ -114,7 +114,6 @@
   // lower it to split more aggressively.
   const PAIR_SECOND_STOP_MAX_LENGTH = 20;
 
-
   const ANNOUNCEMENT_AUDIO_INTERVAL_MS = 100000;
 
   const ANNOUNCEMENT_AUDIO_FILES = [
@@ -392,7 +391,7 @@
   // shouldn't take down the whole pooled board.
   async function fetchCorridorTrips(corridor, serviceCode) {
     const res = await fetch(
-      `${PROXY_URL}?station=UN&service=${serviceCode}&feed=status`
+      `${PROXY_URL}?station=UN&service=${serviceCode}&feed=status`,
     );
     if (!res.ok) throw new Error(`Feed error (${corridor}): ${res.status}`);
     const data = await res.json();
@@ -421,8 +420,8 @@
   async function fetchUnionPooledData() {
     const results = await Promise.allSettled(
       Object.entries(UNION_CORRIDOR_SERVICE_CODES).map(([corridor, code]) =>
-        fetchCorridorTrips(corridor, code)
-      )
+        fetchCorridorTrips(corridor, code),
+      ),
     );
 
     const trips = [];
@@ -447,10 +446,10 @@
     if (!labels) return; // unmapped corridor — leave whatever's already there
 
     const inboundHeaderEl = document.querySelector(
-      '[data-slot="1"][data-field="time"]'
+      '[data-slot="1"][data-field="time"]',
     );
     const outboundHeaderEl = document.querySelector(
-      '[data-slot="5"][data-field="time"]'
+      '[data-slot="5"][data-field="time"]',
     );
     if (inboundHeaderEl) inboundHeaderEl.textContent = labels.inbound;
     if (outboundHeaderEl) outboundHeaderEl.textContent = labels.outbound;
@@ -544,7 +543,7 @@
 
     const stationOptions = STATIONS.map(
       (s) =>
-        `<option value="${s.code}" data-corridor="${s.corridor}">${s.name} (${s.code})</option>`
+        `<option value="${s.code}" data-corridor="${s.corridor}">${s.name} (${s.code})</option>`,
     ).join("");
 
     bar.innerHTML = `
@@ -578,14 +577,15 @@
       warning.textContent = isUnion
         ? "Union pools every corridor automatically — service code is ignored."
         : CONFIRMED_CORRIDORS.has(corridor)
-        ? ""
-        : `Unverified service code for ${corridor} — check it works.`;
+          ? ""
+          : `Unverified service code for ${corridor} — check it works.`;
     }
 
     stationSelect.addEventListener("change", () => {
       const opt = stationSelect.selectedOptions[0];
       const corridor = opt ? opt.dataset.corridor : "";
-      serviceInput.value = SERVICE_CODE_BY_CORRIDOR[corridor] || serviceInput.value;
+      serviceInput.value =
+        SERVICE_CODE_BY_CORRIDOR[corridor] || serviceInput.value;
       refreshWarning();
     });
 
@@ -619,14 +619,15 @@
   // This is intentionally independent of GoTracker S4Messages.
   async function fetchGoTransitAnnouncements() {
     const res = await fetch(`${PROXY_URL}?feed=announcements`);
-    if (!res.ok) throw new Error(`GO Transit announcements error: ${res.status}`);
+    if (!res.ok)
+      throw new Error(`GO Transit announcements error: ${res.status}`);
     return res.json();
   }
 
   function normalizeText(text) {
-    return String(text || '')
-      .replace(/\\u00a0/g, ' ')
-      .replace(/\\s+/g, ' ')
+    return String(text || "")
+      .replace(/\\u00a0/g, " ")
+      .replace(/\\s+/g, " ")
       .trim();
   }
 
@@ -637,7 +638,7 @@
 
     function walk(node) {
       if (!node) return;
-      if (typeof node === 'string') {
+      if (typeof node === "string") {
         const text = normalizeText(node);
         if (text) parts.push(text);
         return;
@@ -646,9 +647,9 @@
         node.forEach(walk);
         return;
       }
-      if (typeof node !== 'object') return;
+      if (typeof node !== "object") return;
 
-      if (typeof node.text === 'string') {
+      if (typeof node.text === "string") {
         const text = normalizeText(node.text);
         if (text) parts.push(text);
       }
@@ -659,13 +660,13 @@
 
     // Paragraph/list boundaries are not represented consistently by the
     // Contentstack payload, so de-duplicate whitespace after flattening.
-    return normalizeText(parts.join(' '));
+    return normalizeText(parts.join(" "));
   }
 
   function announcementBody(alert) {
-    if (!alert) return '';
+    if (!alert) return "";
     const description = alert.description;
-    if (typeof description === 'string') return normalizeText(description);
+    if (typeof description === "string") return normalizeText(description);
 
     const complex = description && description.rich_text_component_complex;
     if (complex) return richTextToPlainText(complex);
@@ -673,13 +674,13 @@
     const basic = description && description.rich_text_basic;
     if (basic) return richTextToPlainText(basic);
 
-    return '';
+    return "";
   }
 
   function announcementId(item) {
     return [item.scope, item.code, item.title, item.body]
       .map(normalizeText)
-      .join('|');
+      .join("|");
   }
 
   function addAnnouncement(out, seen, item) {
@@ -689,13 +690,13 @@
     if (body.length > MAX_ANNOUNCEMENT_BODY_LENGTH) return; // too long — omit rather than truncate
 
     const normalized = {
-      title: title || 'GO Transit Service Update',
-      body: body || '',
-      scope: item.scope || '',
-      code: item.code || '',
-      corridor: item.corridor || '',
-      station: item.station || '',
-      published: item.published || ''
+      title: title || "GO Transit Service Update",
+      body: body || "",
+      scope: item.scope || "",
+      code: item.code || "",
+      corridor: item.corridor || "",
+      station: item.station || "",
+      published: item.published || "",
     };
 
     const id = announcementId(normalized);
@@ -705,7 +706,7 @@
   }
 
   function corridorsForAnnouncements() {
-    if (STATION === 'UN') return Object.keys(UNION_CORRIDOR_SERVICE_CODES);
+    if (STATION === "UN") return Object.keys(UNION_CORRIDOR_SERVICE_CODES);
     const corridor = currentCorridor();
     return corridor ? [corridor] : [];
   }
@@ -727,12 +728,12 @@
       if (notice.code !== station) continue;
       for (const alert of notice.alerts || []) {
         addAnnouncement(out, seen, {
-          scope: 'station',
+          scope: "station",
           code: notice.code,
           station: notice.title,
           title: alert.title,
           body: announcementBody(alert),
-          published: notice.publishDate
+          published: notice.publishDate,
         });
       }
     }
@@ -744,28 +745,32 @@
       if (!targetCorridors.has(corridor)) continue;
       for (const alert of change.alerts || []) {
         addAnnouncement(out, seen, {
-          scope: 'corridor',
+          scope: "corridor",
           code: change.code,
           corridor,
           title: alert.title,
           body: announcementBody(alert),
-          published: change.publishDate
+          published: change.publishDate,
         });
       }
     }
 
     // Keep support for the site's top-level serviceAlerts if/when they are
     // populated. They are global/current rather than station-specific.
-    for (const group of [serviceAlerts.maintenance || [], serviceAlerts.secondary || []]) {
+    for (const group of [
+      serviceAlerts.maintenance || [],
+      serviceAlerts.secondary || [],
+    ]) {
       for (const item of group) {
-        const alerts = item.alerts || (item.title || item.description ? [item] : []);
+        const alerts =
+          item.alerts || (item.title || item.description ? [item] : []);
         for (const alert of alerts) {
           addAnnouncement(out, seen, {
-            scope: 'global',
+            scope: "global",
             code: item.code || alert.code,
             title: alert.title || item.title,
             body: announcementBody(alert),
-            published: item.publishDate || alert.publishDate
+            published: item.publishDate || alert.publishDate,
           });
         }
       }
@@ -790,7 +795,8 @@
   // train board.
   async function fetchMxServiceUpdates() {
     const res = await fetch(`${PROXY_URL}?feed=mx-updates`);
-    if (!res.ok) throw new Error(`Metrolinx service update error: ${res.status}`);
+    if (!res.ok)
+      throw new Error(`Metrolinx service update error: ${res.status}`);
     return res.json();
   }
 
@@ -801,14 +807,14 @@
   // parsed document is never attached to the live page, so this is safe to
   // run on untrusted HTML.
   function mxHtmlToText(html) {
-    if (!html) return '';
+    if (!html) return "";
     try {
-      const doc = new DOMParser().parseFromString(String(html), 'text/html');
-      return normalizeText(doc.body ? doc.body.textContent : '');
+      const doc = new DOMParser().parseFromString(String(html), "text/html");
+      return normalizeText(doc.body ? doc.body.textContent : "");
     } catch (e) {
       // Fallback if DOMParser is unavailable for some reason — strip tags
       // with a blunt regex rather than showing raw markup.
-      return normalizeText(String(html).replace(/<[^>]+>/g, ' '));
+      return normalizeText(String(html).replace(/<[^>]+>/g, " "));
     }
   }
 
@@ -819,7 +825,9 @@
   // both into a real timestamp for sorting.
   function announcementSortKey(published) {
     if (!published) return 0;
-    const mx = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/.exec(published);
+    const mx = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/.exec(
+      published,
+    );
     if (mx) {
       const [, mm, dd, yyyy, hh, min, ss] = mx;
       return Date.UTC(+yyyy, +mm - 1, +dd, +hh, +min, +ss);
@@ -837,10 +845,11 @@
     const trains = (payload && payload.Trains && payload.Trains.Train) || [];
     for (const corridor of trains) {
       if (!targetCorridors.has(corridor.CorridorName)) continue;
-      const notices = (corridor.Notifications && corridor.Notifications.Notification) || [];
+      const notices =
+        (corridor.Notifications && corridor.Notifications.Notification) || [];
       for (const n of notices) {
         addAnnouncement(out, seen, {
-          scope: 'corridor',
+          scope: "corridor",
           code: corridor.CorridorCode,
           corridor: corridor.CorridorName,
           title: n.MessageSubject,
@@ -850,13 +859,14 @@
       }
     }
 
-    const stations = (payload && payload.Stations && payload.Stations.Station) || [];
+    const stations =
+      (payload && payload.Stations && payload.Stations.Station) || [];
     for (const st of stations) {
       if (st.StationCode !== station) continue;
       const notices = (st.Notifications && st.Notifications.Notification) || [];
       for (const n of notices) {
         addAnnouncement(out, seen, {
-          scope: 'station',
+          scope: "station",
           code: st.StationCode,
           station: st.StationName,
           title: n.MessageSubject,
@@ -869,14 +879,18 @@
     // Network-wide notices tagged with one or more affected corridors
     // rather than nested per corridor — include if any affected corridor
     // is relevant to the current station.
-    const networkNotices = (payload && payload.TrainAnnouncements && payload.TrainAnnouncements.Notification) || [];
+    const networkNotices =
+      (payload &&
+        payload.TrainAnnouncements &&
+        payload.TrainAnnouncements.Notification) ||
+      [];
     for (const n of networkNotices) {
       const affected = (n.AffectedLineDetails || []).map((d) => d.Name);
       if (!affected.some((name) => targetCorridors.has(name))) continue;
       addAnnouncement(out, seen, {
-        scope: 'network',
-        code: (n.AffectedLineCodes || []).join(','),
-        corridor: affected.join(' / '),
+        scope: "network",
+        code: (n.AffectedLineCodes || []).join(","),
+        corridor: affected.join(" / "),
         title: n.MessageSubject,
         body: mxHtmlToText(n.MessageBody),
         published: n.PostedDateTime,
@@ -908,13 +922,13 @@
   // delay" (rounded to the nearest minute); trips with no reported delay
   // are simply absent from the index, and updateRow() blanks the field.
   function formatDelayDuration(hms) {
-    const m = /^(\d{2}):(\d{2}):(\d{2})$/.exec(hms || '');
-    if (!m) return '';
+    const m = /^(\d{2}):(\d{2}):(\d{2})$/.exec(hms || "");
+    if (!m) return "";
     const hours = Number(m[1]);
     const minutes = Number(m[2]);
     const seconds = Number(m[3]);
     const totalMinutes = hours * 60 + minutes + (seconds >= 30 ? 1 : 0);
-    if (totalMinutes <= 0) return '';
+    if (totalMinutes <= 0) return "";
     if (totalMinutes >= 60) {
       const h = Math.floor(totalMinutes / 60);
       const mm = totalMinutes % 60;
@@ -927,14 +941,17 @@
     const index = {};
     const trains = (payload && payload.Trains && payload.Trains.Train) || [];
     for (const corridor of trains) {
-      const saags = (corridor.SaagNotifications && corridor.SaagNotifications.SaagNotification) || [];
+      const saags =
+        (corridor.SaagNotifications &&
+          corridor.SaagNotifications.SaagNotification) ||
+        [];
       for (const s of saags) {
         const label = formatDelayDuration(s.DelayDuration);
         if (!label) continue; // on-time trips don't need a row note
         const reason = normalizeText(s.DelayReason);
         const text = reason ? `${label} — ${reason}` : label;
         for (const tripNumber of s.TripNumbers || []) {
-          index[tripNumber] = { text, status: s.Status || '' };
+          index[tripNumber] = { text, status: s.Status || "" };
         }
       }
     }
@@ -952,9 +969,9 @@
   // formatter rather than reusing that one directly.
   function formatDelaySecondsLabel(seconds) {
     const s = Number(seconds);
-    if (!Number.isFinite(s) || s <= 0) return '';
+    if (!Number.isFinite(s) || s <= 0) return "";
     const totalMinutes = Math.round(s / 60);
-    if (totalMinutes <= 0) return '';
+    if (totalMinutes <= 0) return "";
     if (totalMinutes >= 60) {
       const h = Math.floor(totalMinutes / 60);
       const mm = totalMinutes % 60;
@@ -964,7 +981,9 @@
   }
 
   async function fetchTripLocations(serviceCode) {
-    const res = await fetch(`${PROXY_URL}?feed=trip-location&service=${serviceCode}`);
+    const res = await fetch(
+      `${PROXY_URL}?feed=trip-location&service=${serviceCode}`,
+    );
     if (!res.ok) throw new Error(`TripLocation error: ${res.status}`);
     const data = await res.json();
     return (data && data.trips) || [];
@@ -975,14 +994,14 @@
   // flaky corridor doesn't block the rest.
   async function fetchAllTripLocations() {
     const codes =
-      STATION === 'UN'
+      STATION === "UN"
         ? Object.values(UNION_CORRIDOR_SERVICE_CODES)
         : [SERVICE];
     const results = await Promise.allSettled(codes.map(fetchTripLocations));
     const trips = [];
     for (const r of results) {
-      if (r.status === 'fulfilled') trips.push(...r.value);
-      else console.error('GO board: TripLocation fetch failed', r.reason);
+      if (r.status === "fulfilled") trips.push(...r.value);
+      else console.error("GO board: TripLocation fetch failed", r.reason);
     }
     return trips;
   }
@@ -992,14 +1011,19 @@
     for (const t of trips) {
       const label = formatDelaySecondsLabel(t.DelaySeconds);
       if (!label) continue; // on-time trips don't need a row note, same as the SaagNotifications path
-      const detail = normalizeText(t.Detail || '');
+      const detail = normalizeText(t.Detail || "");
       const text = detail ? `${label} — ${detail}` : label;
       // "Stopped" only when actually sitting at a station (InStation is
       // blank/" " while moving between stops) — matches the
       // gts-trip-stopped styling hook the SaagNotifications path already
       // sets via s.Status.
-      const atStation = (t.InStation || '').trim().length > 0;
-      const status = t.IsMoving === 'false' && atStation ? 'Stopped' : t.IsMoving === 'true' ? 'Moving' : '';
+      const atStation = (t.InStation || "").trim().length > 0;
+      const status =
+        t.IsMoving === "false" && atStation
+          ? "Stopped"
+          : t.IsMoving === "true"
+            ? "Moving"
+            : "";
       if (t.TripNumber) index[t.TripNumber] = { text, status };
     }
     return index;
@@ -1015,13 +1039,15 @@
     const originalOverflow = bodyEl.style.overflow;
     const originalWhiteSpace = bodyEl.style.whiteSpace;
 
-    bodyEl.style.overflow = 'hidden';
-    bodyEl.style.whiteSpace = 'normal';
+    bodyEl.style.overflow = "hidden";
+    bodyEl.style.whiteSpace = "normal";
 
     const fitting = items.filter((item) => {
-      bodyEl.textContent = item.body || '';
-      return bodyEl.scrollHeight <= bodyEl.clientHeight + 1 &&
-             bodyEl.scrollWidth <= bodyEl.clientWidth + 1;
+      bodyEl.textContent = item.body || "";
+      return (
+        bodyEl.scrollHeight <= bodyEl.clientHeight + 1 &&
+        bodyEl.scrollWidth <= bodyEl.clientWidth + 1
+      );
     });
 
     bodyEl.textContent = originalText;
@@ -1038,8 +1064,8 @@
 
     const apply = () => {
       if (!announcements.length) {
-        if (titleEl) titleEl.textContent = '';
-        if (bodyEl) bodyEl.textContent = '';
+        if (titleEl) titleEl.textContent = "";
+        if (bodyEl) bodyEl.textContent = "";
         return;
       }
       const item = announcements[announcementIndex % announcements.length];
@@ -1076,7 +1102,10 @@
       ? announcements.findIndex((item) => announcementId(item) === previousId)
       : -1;
 
-    announcementIndex = preservedIndex >= 0 ? preservedIndex : announcementIndex % announcements.length;
+    announcementIndex =
+      preservedIndex >= 0
+        ? preservedIndex
+        : announcementIndex % announcements.length;
     renderAnnouncement();
   }
 
@@ -1093,21 +1122,38 @@
       fetchAllTripLocations(),
     ]);
 
-    if (cmsResult.status === 'rejected') {
-      console.error('GO board: GO Transit announcements failed', cmsResult.reason);
+    if (cmsResult.status === "rejected") {
+      console.error(
+        "GO board: GO Transit announcements failed",
+        cmsResult.reason,
+      );
     }
-    if (mxResult.status === 'rejected') {
-      console.error('GO board: Metrolinx service updates failed', mxResult.reason);
+    if (mxResult.status === "rejected") {
+      console.error(
+        "GO board: Metrolinx service updates failed",
+        mxResult.reason,
+      );
     }
-    if (tripLocationResult.status === 'rejected') {
-      console.error('GO board: TripLocation fetch failed', tripLocationResult.reason);
+    if (tripLocationResult.status === "rejected") {
+      console.error(
+        "GO board: TripLocation fetch failed",
+        tripLocationResult.reason,
+      );
     }
 
-    const cmsItems = cmsResult.status === 'fulfilled' ? mapGoTransitAnnouncements(cmsResult.value) : [];
-    const mxItems = mxResult.status === 'fulfilled' ? mapMxAnnouncements(mxResult.value) : [];
+    const cmsItems =
+      cmsResult.status === "fulfilled"
+        ? mapGoTransitAnnouncements(cmsResult.value)
+        : [];
+    const mxItems =
+      mxResult.status === "fulfilled" ? mapMxAnnouncements(mxResult.value) : [];
 
-    const combined = dedupeAnnouncementsAcrossSources([...cmsItems, ...mxItems]).sort(
-      (a, b) => announcementSortKey(b.published) - announcementSortKey(a.published)
+    const combined = dedupeAnnouncementsAcrossSources([
+      ...cmsItems,
+      ...mxItems,
+    ]).sort(
+      (a, b) =>
+        announcementSortKey(b.published) - announcementSortKey(a.published),
     );
 
     setAnnouncements(combined);
@@ -1115,9 +1161,12 @@
     // SaagNotifications first (periodic notifications), then TripLocation
     // on top (live GPS-tracked, ~10s freshness) — where both cover the same
     // trip, the more current source wins.
-    const saagIndex = mxResult.status === 'fulfilled' ? buildTripDelayIndex(mxResult.value) : {};
+    const saagIndex =
+      mxResult.status === "fulfilled"
+        ? buildTripDelayIndex(mxResult.value)
+        : {};
     const liveIndex =
-      tripLocationResult.status === 'fulfilled'
+      tripLocationResult.status === "fulfilled"
         ? buildTripLocationDelayIndex(tripLocationResult.value)
         : {};
     tripDelayIndex = Object.assign({}, saagIndex, liveIndex);
@@ -1128,7 +1177,7 @@
   // the StationMessage endpoint.
   async function fetchStationData() {
     const res = await fetch(
-      `${PROXY_URL}?station=${STATION}&service=${SERVICE}&feed=status`
+      `${PROXY_URL}?station=${STATION}&service=${SERVICE}&feed=status`,
     );
     if (!res.ok) throw new Error(`Feed error: ${res.status}`);
     return res.json();
@@ -1167,7 +1216,8 @@
   // they're always null, which is why every row showed "—". The actual
   // per-station platform/track number the feed provides is trip.Track.
   function platformFor(trip) {
-    const raw = trip.Track || trip.UnionArrivePlatform || trip.UnionDepartPlatform || "—";
+    const raw =
+      trip.Track || trip.UnionArrivePlatform || trip.UnionDepartPlatform || "—";
     // Multi-platform trips come back "&"-joined from the source data (e.g.
     // "5 & 6", "11 & 12") — comma-separated reads better here.
     return raw.replace(/\s*&\s*/g, ", ");
@@ -1179,7 +1229,7 @@
   // feed reports, so it's a fixed lookup rather than derived from data.
   const ACCESS_ICON_SRC = `${ASSET_BASE_URL}assets/FINALACCESSICON.jpg`;
   const ACCESSIBLE_UNION_PLATFORMS = new Set(
-    Array.from({ length: 13 - 3 + 1 }, (_, i) => String(i + 3))
+    Array.from({ length: 13 - 3 + 1 }, (_, i) => String(i + 3)),
   );
 
   function accessibilityIconHtml() {
@@ -1194,9 +1244,16 @@
   // so a "4, 5" trip can come out as "4♿, 5", "4, 5♿", or "4♿, 5♿"
   // depending on which of the two platforms actually has access.
   function platformDisplayHtml(platformText) {
-    const parts = platformText.split(",").map((p) => p.trim()).filter(Boolean);
+    const parts = platformText
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
     return parts
-      .map((p) => (ACCESSIBLE_UNION_PLATFORMS.has(p) ? `${p}${accessibilityIconHtml()}` : p))
+      .map((p) =>
+        ACCESSIBLE_UNION_PLATFORMS.has(p)
+          ? `${p}${accessibilityIconHtml()}`
+          : p,
+      )
       .join(", ");
   }
 
@@ -1250,7 +1307,9 @@
   // for a trip queued behind one or more overdue-unconfirmed trips.
   function displayTimeFor(trip) {
     const delay = trip._cascadeDelayMinutes || 0;
-    return delay ? addMinutesToTimeString(trip.ScheduledTime, delay) : trip.ScheduledTime || "";
+    return delay
+      ? addMinutesToTimeString(trip.ScheduledTime, delay)
+      : trip.ScheduledTime || "";
   }
 
   // REFINEMENT: measures against the trip's EFFECTIVE (cascaded) time, not
@@ -1292,10 +1351,13 @@
 
       const untilDeparture = minutesUntilEffectiveDeparture(trip);
       trip._minutesUntilPlatformInfo =
-        untilDeparture === null ? null : untilDeparture - PLATFORM_INFO_LEAD_MINUTES;
+        untilDeparture === null
+          ? null
+          : untilDeparture - PLATFORM_INFO_LEAD_MINUTES;
 
       const overdue =
-        trip._minutesUntilPlatformInfo !== null && trip._minutesUntilPlatformInfo <= 0
+        trip._minutesUntilPlatformInfo !== null &&
+        trip._minutesUntilPlatformInfo <= 0
           ? Math.abs(trip._minutesUntilPlatformInfo)
           : 0;
       cumulativeDelay += overdue * CASCADE_MINUTES_PER_STUCK_MINUTE;
@@ -1366,7 +1428,9 @@
   // announcement cycle so a segment/item change reads as a soft transition
   // rather than an abrupt text snap.
   function fadeSwap(elements, applyChange) {
-    const valid = (Array.isArray(elements) ? elements : [elements]).filter(Boolean);
+    const valid = (Array.isArray(elements) ? elements : [elements]).filter(
+      Boolean,
+    );
     if (!valid.length) {
       applyChange();
       return;
@@ -1391,7 +1455,7 @@
   // nothing every refresh.
   function renderStopSegment(slot, { animate = false } = {}) {
     const stopsEl = document.querySelector(
-      `[data-slot="${slot}"][data-field="stops"]`
+      `[data-slot="${slot}"][data-field="stops"]`,
     );
     if (!stopsEl) return;
 
@@ -1439,25 +1503,45 @@
   // ones (e.g. "Lakeshore West service adjustments") are the fallback of
   // the fallback.
   function gotransitReasonFallback(trip) {
-    const stationMatch = announcements.find((a) => a.scope === 'station' && a.code === STATION);
-    if (stationMatch) return normalizeText(stationMatch.title || stationMatch.body || '');
+    const stationMatch = announcements.find(
+      (a) => a.scope === "station" && a.code === STATION,
+    );
+    if (stationMatch)
+      return normalizeText(stationMatch.title || stationMatch.body || "");
 
-    const corridor = PAGE_MODE === 'union' ? trip._corridor : currentCorridor();
-    const corridorMatch = announcements.find((a) => a.scope === 'corridor' && a.corridor === corridor);
-    if (corridorMatch) return normalizeText(corridorMatch.title || corridorMatch.body || '');
+    const corridor = PAGE_MODE === "union" ? trip._corridor : currentCorridor();
+    const corridorMatch = announcements.find(
+      (a) => a.scope === "corridor" && a.corridor === corridor,
+    );
+    if (corridorMatch)
+      return normalizeText(corridorMatch.title || corridorMatch.body || "");
 
-    return '';
+    return "";
   }
 
   function updateRow(slot, trip) {
-    const timeEl = document.querySelector(`[data-slot="${slot}"][data-field="time"]`);
-    const destEl = document.querySelector(`[data-slot="${slot}"][data-field="destination"]`);
-    const stopsEl = document.querySelector(`[data-slot="${slot}"][data-field="stops"]`);
-    const platformEl = document.querySelector(`[data-slot="${slot}"][data-field="platform"]`);
-    const platformTimeEl = document.querySelector(`[data-slot="${slot}"][data-field="platform-time"]`);
+    const timeEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="time"]`,
+    );
+    const destEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="destination"]`,
+    );
+    const stopsEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="stops"]`,
+    );
+    const platformEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="platform"]`,
+    );
+    const platformTimeEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="platform-time"]`,
+    );
     // Optional — no-op on rows that don't have this element.
-    const iconEl = document.querySelector(`[data-slot="${slot}"][data-field="destination-icon"]`);
-    const delayEl = document.querySelector(`[data-slot="${slot}"][data-field="delay"]`);
+    const iconEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="destination-icon"]`,
+    );
+    const delayEl = document.querySelector(
+      `[data-slot="${slot}"][data-field="delay"]`,
+    );
 
     if (!trip) {
       if (timeEl) {
@@ -1497,13 +1581,18 @@
     }
 
     if (timeEl) {
-      timeEl.classList.toggle('gts-time-stopped', trip.TripCancelled);
-      timeEl.textContent = trip.TripCancelled ? displayTimeFor(trip) : displayTimeFor(trip);
+      timeEl.classList.toggle("gts-time-stopped", trip.TripCancelled);
+      timeEl.textContent = trip.TripCancelled
+        ? displayTimeFor(trip)
+        : displayTimeFor(trip);
       // A cancelled trip can still carry a cascade-delay estimate, but
       // cancellation should read as a clean red, not red-and-italic —
       // the cascade's italic styling only makes sense while the trip is
       // still actually running.
-      timeEl.classList.toggle("gts-cascade-delayed", !!trip._cascadeDelayMinutes && !trip.TripCancelled);
+      timeEl.classList.toggle(
+        "gts-cascade-delayed",
+        !!trip._cascadeDelayMinutes && !trip.TripCancelled,
+      );
     }
     if (destEl) {
       destEl.textContent = destinationFor(trip);
@@ -1511,7 +1600,8 @@
     }
 
     if (iconEl) {
-      const logoSrc = PAGE_MODE === "union" ? CORRIDOR_LOGO_SRC[trip._corridor] : null;
+      const logoSrc =
+        PAGE_MODE === "union" ? CORRIDOR_LOGO_SRC[trip._corridor] : null;
       if (logoSrc) {
         iconEl.src = logoSrc;
         iconEl.style.display = "";
@@ -1522,7 +1612,7 @@
       if (!!trip.TripCancelled) {
         iconEl.src = logoSrc;
       }
-      }
+    }
 
     // Keep whichever segment was already showing (rather than snapping back
     // to segment 0) so a mid-cycle poll refresh doesn't visibly jump.
@@ -1533,7 +1623,8 @@
       cancelled: !!trip.TripCancelled,
     };
     renderStopSegment(slot);
-    if (stopsEl) stopsEl.classList.toggle("gts-row-cancelled", !!trip.TripCancelled);
+    if (stopsEl)
+      stopsEl.classList.toggle("gts-row-cancelled", !!trip.TripCancelled);
 
     if (platformEl || platformTimeEl) {
       const unconfirmed = isUnconfirmedFutureTrip(trip);
@@ -1550,7 +1641,8 @@
           // it's overdue (platform-time has nothing left to count down at
           // that point, so this field carries the placeholder instead).
           const remaining = trip._minutesUntilPlatformInfo;
-          platformEl.textContent = remaining !== null && remaining <= 0 ? "-" : "";
+          platformEl.textContent =
+            remaining !== null && remaining <= 0 ? "-" : "";
         } else {
           const text = platformFor(trip);
           if (PAGE_MODE === "union") {
@@ -1562,7 +1654,10 @@
         // Gray/italic applies whenever the platform is a placeholder rather
         // than a real value — unconfirmed OR cancelled — with the flash
         // layered on top for cancelled specifically.
-        platformEl.classList.toggle("gts-unconfirmed", unconfirmed || !!trip.TripCancelled);
+        platformEl.classList.toggle(
+          "gts-unconfirmed",
+          unconfirmed || !!trip.TripCancelled,
+        );
         platformEl.classList.toggle("gts-row-cancelled", !!trip.TripCancelled);
       }
 
@@ -1592,13 +1687,18 @@
           ? (trip.Remarks.find((r) => r.Language === "English") || {}).Text
           : "";
         const reason =
-          normalizeText(trip.ExtraRemark || remarksEnglish || "") || gotransitReasonFallback(trip);
+          normalizeText(trip.ExtraRemark || remarksEnglish || "") ||
+          gotransitReasonFallback(trip);
         delayEl.textContent = reason ? `Cancelled — ${reason}` : "Cancelled";
       } else {
         const delay = tripDelayIndex[trip.TripNumber];
         delayEl.textContent = delay ? delay.text : "";
       }
-      delayEl.classList.toggle("gts-trip-stopped", !!(tripDelayIndex[trip.TripNumber]?.status === "Stopped") && !trip.TripCancelled);
+      delayEl.classList.toggle(
+        "gts-trip-stopped",
+        !!(tripDelayIndex[trip.TripNumber]?.status === "Stopped") &&
+          !trip.TripCancelled,
+      );
       //delayEl.classList.toggle("gts-row-cancelled", !!trip.TripCancelled);
     }
   }
@@ -1641,9 +1741,7 @@
     // suffix (e.g. "Niagara Falls GO (Via Station)", "St. Catharines GO
     // (Via Station)") — strip that first so the plain " GO" strip below
     // still catches the "GO" that's now left at the end.
-    return trimmed
-      .replace(/\s*\(Via Station\)$/i, "")
-      .replace(/\s+GO$/i, "");
+    return trimmed.replace(/\s*\(Via Station\)$/i, "").replace(/\s+GO$/i, "");
   }
 
   // Metrolinx exposes this same departures data in two different response
@@ -1687,11 +1785,14 @@
   // already expect from a GoTracker trip, so none of the render code needs
   // to know which source or shape a given row came from.
   function mapMetrolinxDeparture(item, cancelled) {
-    const stops = (item.allDepartureStops && item.allDepartureStops.departureDetailsList) || [];
+    const stops =
+      (item.allDepartureStops && item.allDepartureStops.departureDetailsList) ||
+      [];
     // GoTracker's StoppingAtList only lists stops AHEAD of the train, not
     // the origin itself — match that by dropping the current station.
     const downstream = stops.filter((s) => s.stopCode !== STATION);
-    const lastStop = downstream[downstream.length - 1] || stops[stops.length - 1];
+    const lastStop =
+      downstream[downstream.length - 1] || stops[stops.length - 1];
     // Inbound = toward Union, matching the convention used everywhere else
     // in this file. Checking only the LAST stop misclassified through-
     // running trips (stayInTrain combos, e.g. a Lakeshore West trip that
@@ -1699,7 +1800,9 @@
     // wasn't their final stop. A train can't pass through Union twice, so
     // "Union is still ahead somewhere downstream" is unambiguous regardless
     // of where the trip ultimately terminates.
-    const directionCd = downstream.some((s) => s.stopCode === "UN") ? "Inbound" : "Outbound";
+    const directionCd = downstream.some((s) => s.stopCode === "UN")
+      ? "Inbound"
+      : "Outbound";
 
     return {
       TripNumber: item.tripNumber,
@@ -1735,14 +1838,17 @@
   async function fetchFutureTrips() {
     const variant = departuresVariantForStation(STATION);
     const res = await fetch(
-      `${PROXY_URL}?feed=departures&variant=${variant}&station=${STATION}&pageLimit=20`
+      `${PROXY_URL}?feed=departures&variant=${variant}&station=${STATION}&pageLimit=20`,
     );
     if (!res.ok) throw new Error(`Future departures error: ${res.status}`);
     const data = await res.json();
-    const items = (data && data.allDepartures && data.allDepartures.items) || [];
+    const items =
+      (data && data.allDepartures && data.allDepartures.items) || [];
     // Train only — this is a train board, matching the same bus-exclusion
     // already applied to the announcement sources.
-    return items.filter((item) => item.transitTypeName === "T").map(mapMetrolinxTrip);
+    return items
+      .filter((item) => item.transitTypeName === "T")
+      .map(mapMetrolinxTrip);
   }
 
   // --- Union tail-fill ------------------------------------------------------
@@ -1782,12 +1888,15 @@
 
   async function fetchFutureUnionTrips() {
     // Always "plain" — see departuresVariantForStation() above.
-    const res = await fetch(`${PROXY_URL}?feed=departures&variant=plain&station=UN&pageLimit=20`);
+    const res = await fetch(
+      `${PROXY_URL}?feed=departures&variant=plain&station=UN&pageLimit=20`,
+    );
     if (!res.ok) throw new Error(`Future departures error: ${res.status}`);
     const data = await res.json();
     // "plain" shape is already split by mode — no transitTypeName filter
     // needed, trainDepartures.items is trains-only by construction.
-    const items = (data && data.trainDepartures && data.trainDepartures.items) || [];
+    const items =
+      (data && data.trainDepartures && data.trainDepartures.items) || [];
     return items.map(mapMetrolinxUnionTrip).filter(Boolean); // drop unmapped-corridor trips
   }
 
@@ -1820,11 +1929,15 @@
     try {
       const existingNumbers = new Set(existingTrips.map((t) => t.TripNumber));
       const future = (await fetchFutureTrips()).filter(
-        (t) => !existingNumbers.has(t.TripNumber)
+        (t) => !existingNumbers.has(t.TripNumber),
       );
 
-      const futureInbound = future.filter((t) => t.DirectionCd === "Inbound").sort(byScheduledTime);
-      const futureOutbound = future.filter((t) => t.DirectionCd === "Outbound").sort(byScheduledTime);
+      const futureInbound = future
+        .filter((t) => t.DirectionCd === "Inbound")
+        .sort(byScheduledTime);
+      const futureOutbound = future
+        .filter((t) => t.DirectionCd === "Outbound")
+        .sort(byScheduledTime);
 
       while (inbound.length < INBOUND_SLOTS.length && futureInbound.length) {
         inbound.push(futureInbound.shift());
@@ -1931,7 +2044,7 @@
     setInterval(tickAnnouncementCycle, ANNOUNCEMENT_CYCLE_MS);
 
     // Re-check which announcements fit if the Webstudio layout changes size.
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       if (!announcements.length) return;
       const current = announcements;
       announcements = filterFittingAnnouncements(current);
@@ -1964,10 +2077,7 @@
     }
 
     // Start the timer after the board has initialized.
-    setInterval(
-      playRandomAnnouncementAudio,
-      ANNOUNCEMENT_AUDIO_INTERVAL_MS
-    );
+    setInterval(playRandomAnnouncementAudio, ANNOUNCEMENT_AUDIO_INTERVAL_MS);
   }
 
   // If the script loads after the page has already finished loading (common
