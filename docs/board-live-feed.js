@@ -1520,7 +1520,7 @@
       // if (!!trip.TripCancelled) {
       //   iconEl.src = `${ASSET_BASE_URL}assets/nostation.png`;
       // }
-    }
+      }
 
     // Keep whichever segment was already showing (rather than snapping back
     // to segment 0) so a mid-cycle poll refresh doesn't visibly jump.
