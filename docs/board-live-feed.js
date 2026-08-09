@@ -69,6 +69,29 @@
  */
 
 (function () {
+  // Derived from THIS script's own <script src> location rather than
+  // hardcoded as "assets/" — a hardcoded root-absolute path only resolves
+  // correctly when the page is served from the domain root (e.g. local dev
+  // via `npx serve .`). On a GitHub Pages PROJECT page (anything other than
+  // a <username>.github.io repo), the site actually lives under a
+  // /RepoName/ subpath, and "assets/..." would incorrectly resolve to the
+  // domain root instead — exactly the bug that prompted this. Since
+  // board-live-feed.js is always included via a relative
+  // <script src="./board-live-feed.js">, deriving from its own resolved
+  // location means every hosting target (local dev, GitHub Pages project
+  // page, custom domain, anywhere else) works automatically with zero
+  // manual path configuration, forever — this never needs touching again
+  // regardless of where the page ends up being served from.
+  const ASSET_BASE_URL = (() => {
+    try {
+      const scriptSrc = document.currentScript && document.currentScript.src;
+      if (scriptSrc) return new URL(".", scriptSrc).href;
+    } catch (e) {
+      /* fall through to the relative fallback below */
+    }
+    return "./";
+  })();
+
   const PROXY_URL = "https://go-boardv2.onrender.com/"; // swap for your deployed Worker URL when going live
   const POLL_MS = 20000; // 20s — matches the proxy's edge cache TTL
   const STOP_CYCLE_MS = 10000; // how often the stops field swaps to the next segment
@@ -93,8 +116,9 @@
   const ANNOUNCEMENT_AUDIO_INTERVAL_MS = 100000;
 
   const ANNOUNCEMENT_AUDIO_FILES = [
-    "/audio/announcement1.wav",
-    "/audio/announcement2.wav",
+    `${ASSET_BASE_URL}audio/announcement1.wav`,
+    `${ASSET_BASE_URL}audio/announcement2.wav`,
+    `${ASSET_BASE_URL}audio/announcement3.wav`,
   ];
 
   let announcementAudio = null;
@@ -314,13 +338,13 @@
   // Logo asset per corridor, shown to the left of the destination text on
   // the Union page only. Paths match the SVGs already sitting in /assets.
   const CORRIDOR_LOGO_SRC = {
-    "Lakeshore West": "/assets/GO_Lakeshore_West_logo.svg",
-    "Lakeshore East": "/assets/GO_Lakeshore_East_logo.svg",
-    Milton: "/assets/GO_Milton_logo.svg",
-    Kitchener: "/assets/GO_Kitchener_logo.svg",
-    Barrie: "/assets/GO_Barrie_logo.svg",
-    "Richmond Hill": "/assets/GO_Richmond_Hill_logo.svg",
-    Stouffville: "/assets/GO_Stouffville_logo.svg",
+    "Lakeshore West": `${ASSET_BASE_URL}assets/GO_Lakeshore_West_logo.svg`,
+    "Lakeshore East": `${ASSET_BASE_URL}assets/GO_Lakeshore_East_logo.svg`,
+    Milton: `${ASSET_BASE_URL}assets/GO_Milton_logo.svg`,
+    Kitchener: `${ASSET_BASE_URL}assets/GO_Kitchener_logo.svg`,
+    Barrie: `${ASSET_BASE_URL}assets/GO_Barrie_logo.svg`,
+    "Richmond Hill": `${ASSET_BASE_URL}assets/GO_Richmond_Hill_logo.svg`,
+    Stouffville: `${ASSET_BASE_URL}assets/GO_Stouffville_logo.svg`,
   };
 
   // One fetch per corridor, tagging every trip with the corridor it came
@@ -1114,7 +1138,7 @@
   // Union platforms 3-13 specifically have accessible (elevator) access —
   // this is a physical fact about Union's own layout, not something any
   // feed reports, so it's a fixed lookup rather than derived from data.
-  const ACCESS_ICON_SRC = "/assets/FINALACCESSICON.jpg";
+  const ACCESS_ICON_SRC = `${ASSET_BASE_URL}assets/FINALACCESSICON.jpg`;
   const ACCESSIBLE_UNION_PLATFORMS = new Set(
     Array.from({ length: 13 - 3 + 1 }, (_, i) => String(i + 3))
   );
@@ -1457,7 +1481,7 @@
         iconEl.style.display = "none";
       }
       // if (!!trip.TripCancelled) {
-      //   iconEl.src = "/assets/nostation.png";
+      //   iconEl.src = `${ASSET_BASE_URL}assets/nostation.png`;
       // }
     }
 
