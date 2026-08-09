@@ -1,0 +1,13 @@
+{
+  "name": "gotracker-proxy",
+  "version": "1.0.0",
+  "description": "Proxy server for the GO Transit departure board (GoTracker + Metrolinx feeds)",
+  "main": "gotracker-proxy-local.js",
+  "type": "module",
+  "scripts": {
+    "start": "node gotracker-proxy-local.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
