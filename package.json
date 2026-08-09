@@ -5,7 +5,8 @@
   "main": "gotracker-proxy-local.js",
   "type": "module",
   "scripts": {
-    "start": "node gotracker-proxy-local.js"
+    "start": "node gotracker-proxy-local.js",
+    "local-serve": "npx serve docs"
   },
   "engines": {
     "node": ">=18"
