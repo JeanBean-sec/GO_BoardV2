@@ -131,8 +131,45 @@
   //                trip data goes in slots 2-4 (toward Union) and 6-8 (away
   //                from Union). This page is meant to be reused for every
   //                non-Union corridor, so don't assume Lakeshore-only data.
+  // Works out this deployment's real root-relative base path. On GitHub
+  // Pages project sites (served under e.g. /GO_BoardV2/), Webstudio bakes
+  // in a <base> tag; everywhere else (local `npx serve`, the Render-hosted
+  // flow, a custom domain) there's no <base> tag and the site genuinely
+  // lives at domain root. Deriving this once means every "/" vs "/copy-1"
+  // comparison and every redirect below works identically regardless of
+  // which of those this page is actually running under — previously these
+  // were hardcoded absolute paths, which (a) never matched on GitHub
+  // Pages since location.pathname there always carries the /GO_BoardV2
+  // prefix, causing normalizedPath() to never equal "/" and PAGE_MODE to
+  // always misdetect as "split", and (b) even when a redirect did fire,
+  // location.href = "/copy-1" is itself a root-absolute target that
+  // ignores <base> entirely and 404s outside the true domain root.
+  function computeBasePath() {
+    const baseEl = document.querySelector("base[href]");
+    if (!baseEl) return "/";
+    try {
+      const path = new URL(baseEl.getAttribute("href"), location.href).pathname;
+      return path.replace(/\/+$/, "") + "/";
+    } catch {
+      return "/";
+    }
+  }
+  const BASE_PATH = computeBasePath(); // e.g. "/" locally, "/GO_BoardV2/" on GitHub Pages
+
   function normalizedPath() {
-    return location.pathname.replace(/\/+$/, "") || "/";
+    let path = location.pathname;
+    if (BASE_PATH !== "/" && path.startsWith(BASE_PATH)) {
+      path = "/" + path.slice(BASE_PATH.length);
+    }
+    return path.replace(/\/+$/, "") || "/";
+  }
+
+  // Builds a real, correctly-prefixed absolute target for location.href —
+  // "/" or "/copy-1" in the app's own path terms, translated into whatever
+  // the actual deployment's base path is.
+  function resolvePath(appPath) {
+    const suffix = appPath === "/" ? "" : appPath.replace(/^\//, "");
+    return BASE_PATH + suffix;
   }
 
   const PAGE_MODE = normalizedPath() === "/" ? "union" : "split";
@@ -555,9 +592,9 @@
       setSetting("goboard_station", newStation);
       setSetting("goboard_service", serviceInput.value.trim());
 
-      const targetPath = newStation === "UN" ? "/" : "/copy-1";
-      if (normalizedPath() !== targetPath) {
-        location.href = targetPath; // navigate to the page that matches the new station
+      const appPath = newStation === "UN" ? "/" : "/copy-1";
+      if (normalizedPath() !== appPath) {
+        location.href = resolvePath(appPath); // navigate to the page that matches the new station
       } else {
         location.reload();
       }
@@ -1874,7 +1911,7 @@
     // layout for that station's data.
     const expectedPath = STATION === "UN" ? "/" : "/copy-1";
     if (normalizedPath() !== expectedPath) {
-      location.href = expectedPath;
+      location.href = resolvePath(expectedPath);
       return;
     }
 
