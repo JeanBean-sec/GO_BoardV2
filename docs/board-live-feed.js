@@ -82,16 +82,18 @@
   // page, custom domain, anywhere else) works automatically with zero
   // manual path configuration, forever — this never needs touching again
   // regardless of where the page ends up being served from.
-  const ASSET_BASE_URL = (() => {
-    try {
-      const scriptSrc = document.currentScript && document.currentScript.src;
-      if (scriptSrc) return new URL(".", scriptSrc).href;
-    } catch (e) {
-      /* fall through to the relative fallback below */
-    }
-    return "./";
-  })();
+  // const ASSET_BASE_URL = (() => {
+  //   try {
+  //     const scriptSrc = document.currentScript && document.currentScript.src;
+  //     if (scriptSrc) return new URL(".", scriptSrc).href;
+  //   } catch (e) {
+  //     /* fall through to the relative fallback below */
+  //   }
+  //   return "./";
+  // })();
 
+  const ASSET_BASE_URL = "/GO_BoardV2/";
+  
   const PROXY_URL = "https://go-boardv2.onrender.com/"; // swap for your deployed Worker URL when going live
   const POLL_MS = 20000; // 20s — matches the proxy's edge cache TTL
   const STOP_CYCLE_MS = 10000; // how often the stops field swaps to the next segment
