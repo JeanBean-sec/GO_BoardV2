@@ -1687,7 +1687,7 @@
           : "";
         const reason =
           normalizeText(trip.ExtraRemark || remarksEnglish || "") ||
-          gotransitReasonFallback(trip);
+          //gotransitReasonFallback(trip);
         delayEl.textContent = reason ? `Cancelled — ${reason}` : "Cancelled";
       } else {
         const delay = tripDelayIndex[trip.TripNumber];
