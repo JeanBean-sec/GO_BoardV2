@@ -2084,12 +2084,15 @@
   // and a listener for it would never run — so check readyState first.
   const firstBody = document.body;
 
-  const waitForBodyReplacement = setInterval(() => {
+    const waitForBodyReplacement = setInterval(() => {
     if (document.body !== firstBody) {
       clearInterval(waitForBodyReplacement);
 
+      // Give Vike/React a brief moment to finish updating the DOM tree
       requestAnimationFrame(() => {
-        init();
+        setTimeout(() => {
+          init(); // Now it safely runs AFTER the layout is permanently settled
+        }, 100); // 100 milliseconds delay
       });
     }
   }, 50);
