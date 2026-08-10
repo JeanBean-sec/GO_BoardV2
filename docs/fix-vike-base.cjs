@@ -1,29 +1,42 @@
 const fs = require("fs");
 const path = require("path");
 
-const file = path.resolve(
-  "assets",
-  "entries",
-  "entry-server-routing.DDgKCHFx.js"
-);
+const assetsDir = path.resolve("assets");
 
-if (!fs.existsSync(file)) {
-  console.error(`File not found:\n${file}`);
+if (!fs.existsSync(assetsDir)) {
+  console.error(`Assets directory not found:\n${assetsDir}`);
   process.exit(1);
 }
 
-let content = fs.readFileSync(file, "utf8");
+let patched = 0;
 
-const oldCode = 'return "/" + e;';
-const newCode = 'return "/GO_BoardV2/" + e;';
+function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const filePath = path.join(dir, entry.name);
 
-if (!content.includes(oldCode)) {
-  console.log("Target code was not found. Nothing changed.");
-  process.exit(0);
+    if (entry.isDirectory()) {
+      walk(filePath);
+      continue;
+    }
+
+    if (!entry.name.endsWith(".js")) continue;
+
+    let content = fs.readFileSync(filePath, "utf8");
+
+    // Only modify the Vite module-preload helper.
+    const oldCode = 'const Ln = function (e) {\\n  return "/" + e;\\n};';
+    const newCode = 'const Ln = function (e) {\\n  return "/GO_BoardV2/" + e;\\n};';
+
+    if (content.includes(oldCode)) {
+      content = content.replaceAll(oldCode, newCode);
+      fs.writeFileSync(filePath, content);
+
+      console.log(`PATCHED: ${path.relative(process.cwd(), filePath)}`);
+      patched++;
+    }
+  }
 }
 
-content = content.replace(oldCode, newCode);
+walk(assetsDir);
 
-fs.writeFileSync(file, content);
-
-console.log(`Fixed Vike base path in:\n${file}`);
+console.log(`\\nDone. Patched ${patched} file(s).`);
