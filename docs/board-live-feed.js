@@ -92,7 +92,7 @@
   //   return "./";
   // })();
 
-  const ASSET_BASE_URL = "/GO_BoardV2/";
+  const ASSET_BASE_URL = "https:jean-gatdula.me/GO_BoardV2/";
 
   const PROXY_URL = "https://go-boardv2.onrender.com/"; // swap for your deployed Worker URL when going live
   const POLL_MS = 20000; // 20s — matches the proxy's edge cache TTL
