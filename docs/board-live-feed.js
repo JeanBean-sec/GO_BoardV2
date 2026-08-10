@@ -1686,7 +1686,7 @@
           ? (trip.Remarks.find((r) => r.Language === "English") || {}).Text
           : "";
         const reason =
-          normalizeText(trip.ExtraRemark || remarksEnglish || "") ||
+          normalizeText(trip.ExtraRemark || remarksEnglish || ""); //||
           //gotransitReasonFallback(trip);
         delayEl.textContent = reason ? `Cancelled — ${reason}` : "Cancelled";
       } else {
