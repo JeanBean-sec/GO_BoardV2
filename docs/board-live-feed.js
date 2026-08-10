@@ -375,13 +375,13 @@
   // Logo asset per corridor, shown to the left of the destination text on
   // the Union page only. Paths match the SVGs already sitting in /assets.
   const CORRIDOR_LOGO_SRC = {
-    "Lakeshore West": `${ASSET_BASE_URL}assets/GO_Lakeshore_West_logo.svg`,
-    "Lakeshore East": `${ASSET_BASE_URL}assets/GO_Lakeshore_East_logo.svg`,
-    Milton: `${ASSET_BASE_URL}assets/GO_Milton_logo.svg`,
-    Kitchener: `${ASSET_BASE_URL}assets/GO_Kitchener_logo.svg`,
-    Barrie: `${ASSET_BASE_URL}assets/GO_Barrie_logo.svg`,
-    "Richmond Hill": `${ASSET_BASE_URL}assets/GO_Richmond_Hill_logo.svg`,
-    Stouffville: `${ASSET_BASE_URL}assets/GO_Stouffville_logo.svg`,
+    "Lakeshore West": `${ASSET_BASE_URL}assets/GO_Lakeshore_West_logo_2024_4aILXS_0JrUnFu5WFVit_.svg`,
+    "Lakeshore East": `${ASSET_BASE_URL}assets/GO_Lakeshore_East_logo_2024_f2US-Pcm9KSaK7beYWn5-.svg`,
+    Milton: `${ASSET_BASE_URL}assets/GO_Milton_logo_2024_cPJ8EiMobofVr3zM94Eht.svg`,
+    Kitchener: `${ASSET_BASE_URL}assets/GO_Kitchener_logo_2024_9b-qVRghdRXffMc1E0GOA.svg`,
+    Barrie: `${ASSET_BASE_URL}assets/GO_Barrie_logo_2024_P0TEqJRVXui31JpLeME25.svg`,
+    "Richmond Hill": `${ASSET_BASE_URL}assets/GO_Richmond_Hill_logo_2024_a67hhq3rncva_mNkKcEbn.svg`,
+    Stouffville: `${ASSET_BASE_URL}assets/GO_Stouffville_logo_2024_dz0x1RPfIBCjPZMYbLzC6.svg`,
   };
 
   // One fetch per corridor, tagging every trip with the corridor it came
@@ -1226,7 +1226,7 @@
   // Union platforms 3-13 specifically have accessible (elevator) access —
   // this is a physical fact about Union's own layout, not something any
   // feed reports, so it's a fixed lookup rather than derived from data.
-  const ACCESS_ICON_SRC = `${ASSET_BASE_URL}assets/FINALACCESSICON.jpg`;
+  const ACCESS_ICON_SRC = `${ASSET_BASE_URL}assets/FINALACCESSICON_tcyRAWQt5eMvqh__ITMYM.jpg`;
   const ACCESSIBLE_UNION_PLATFORMS = new Set(
     Array.from({ length: 13 - 3 + 1 }, (_, i) => String(i + 3)),
   );
