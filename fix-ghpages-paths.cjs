@@ -88,6 +88,21 @@ function walk(dir) {
 }
 
 function fixFile(file) {
+  // board-live-feed.js is hand-written application logic, not Webstudio-
+  // generated markup/bundle output — the generalized safety net below
+  // already proved capable of corrupting a real thing here once (it turned
+  // a legitimate JS constant, `const ASSET_BASE_URL = "/GO_BoardV2/"`, into
+  // an empty string, because it can't tell a markup path reference apart
+  // from application config that happens to contain the same text). That
+  // file now computes its base path dynamically at runtime instead of
+  // hardcoding it, so it shouldn't need this kind of fixup going forward —
+  // but excluding it here means a future reintroduction of a similar
+  // hardcoded constant fails loudly (broken until someone notices) rather
+  // than getting silently mangled.
+  if (path.basename(file) === "board-live-feed.js") {
+    return;
+  }
+
   const original = fs.readFileSync(file, "utf8");
   let text = original;
   let fileReplacements = 0;
@@ -96,6 +111,37 @@ function fixFile(file) {
     const matches = text.match(pattern);
     if (matches) fileReplacements += matches.length;
     text = text.replace(pattern, replacement);
+  }
+
+  // General-purpose safety net: strip the full discovered <base> prefix
+  // (e.g. "/GO_BoardV2/") from ANY src="", href="", or url() reference,
+  // not just the three known cases above — Webstudio has at least once
+  // baked this full prefix into a specific asset reference (font preloads,
+  // one image src) that didn't match any of the three fixed patterns.
+  // Safe to run broadly here because this function no longer touches
+  // hand-written JS (see the board-live-feed.js exclusion above) — only
+  // HTML and Webstudio's own compiled bundle output reach this point.
+  //
+  // The <base> tag's own href is supposed to stay absolute, so it's
+  // temporarily swapped for a placeholder before this runs and restored
+  // right after — simpler and less fragile than trying to regex around it
+  // with a lookbehind.
+  if (discoveredBaseHref) {
+    const PLACEHOLDER = "@@BASE_TAG_PLACEHOLDER@@";
+    const baseTagMatch = text.match(BASE_TAG_PATTERN);
+    if (baseTagMatch) {
+      text = text.replace(BASE_TAG_PATTERN, PLACEHOLDER);
+    }
+
+    const escaped = discoveredBaseHref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const basePrefixPattern = new RegExp(`(["'(])${escaped}`, "g");
+    const matches = text.match(basePrefixPattern);
+    if (matches) fileReplacements += matches.length;
+    text = text.replace(basePrefixPattern, "$1");
+
+    if (baseTagMatch) {
+      text = text.replace(PLACEHOLDER, baseTagMatch[0]);
+    }
   }
 
   if (HTML_EXTENSION.test(file) && discoveredBaseHref && !BASE_TAG_PATTERN.test(text)) {
