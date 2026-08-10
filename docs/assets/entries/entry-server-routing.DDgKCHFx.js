@@ -1615,7 +1615,7 @@ function Fn(e, t, n) {
 }
 const kn = "modulepreload",
   Ln = function (e) {
-    return "/" + e;
+    return "/GO_BoardV2/" + e;
   },
   ue = {},
   fe = function (t, n, r) {
