@@ -5,7 +5,7 @@ const __vite__mapDeps = (
     (m.f = [
       "assets/entries/pages_copy-1.CFdHRQbG.js",
       "assets/chunks/chunk-Z5Rp4zd2.js",
-      "GO_BoardV2/assets/static/app_generated_index-6937cd5a.CKphNMhd.css",
+      "assets/static/app_generated_index-6937cd5a.CKphNMhd.css",
       "assets/entries/pages_index.Bt06VzVf.js",
     ]),
 ) => i.map((i) => d[i]);
