@@ -3,10 +3,10 @@ const __vite__mapDeps = (
   m = __vite__mapDeps,
   d = m.f ||
     (m.f = [
-      "/GO_BoardV2/assets/entries/pages_copy-1.CFdHRQbG.js",
-      "/GO_BoardV2/assets/chunks/chunk-Z5Rp4zd2.js",
-      "/GO_BoardV2/assets/static/app_generated_index-6937cd5a.CKphNMhd.css",
-      "/GO_BoardV2/assets/entries/pages_index.Bt06VzVf.js",
+      "assets/entries/pages_copy-1.CFdHRQbG.js",
+      "assets/chunks/chunk-Z5Rp4zd2.js",
+      "assets/static/app_generated_index-6937cd5a.CKphNMhd.css",
+      "assets/entries/pages_index.Bt06VzVf.js",
     ]),
 ) => i.map((i) => d[i]);
 function ge(e) {
