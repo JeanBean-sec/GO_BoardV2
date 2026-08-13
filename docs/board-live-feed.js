@@ -384,15 +384,57 @@
     Stouffville: `${ASSET_BASE_URL}assets/GO_Stouffville_logo_2024_dz0x1RPfIBCjPZMYbLzC6.svg`,
   };
 
-  // NOTE: this used to be Union's primary trip-list source (one
-  // StationStatusJSON fetch per corridor, merged). Removed — GoTracker
-  // genuinely has no working trip data for station=UN at all (confirmed via
-  // a real, fully-cookied/headered browser request replicated through
-  // curl), so this was always returning nothing useful. Union now sources
-  // entirely from Metrolinx's departures feed instead — see
-  // fetchFutureUnionTrips()/mapMetrolinxUnionTrip() below. UNION_CORRIDOR_
-  // SERVICE_CODES above is still very much alive — fetchAllTripLocations()
-  // uses it for the separate, still-working live delay/status enrichment.
+  // One fetch per corridor, tagging every trip with the corridor it came
+  // from (used for both the destination-name swap and the logo lookup).
+  // Promise.allSettled rather than Promise.all — one flaky corridor
+  // shouldn't take down the whole pooled board.
+  async function fetchCorridorTrips(corridor, serviceCode) {
+    const res = await fetch(
+      `${PROXY_URL}?station=UN&service=${serviceCode}&feed=status`,
+    );
+    if (!res.ok) throw new Error(`Feed error (${corridor}): ${res.status}`);
+    const data = await res.json();
+    const trips = ((data && data.TripStatus) || [])
+      .filter(isRealTrip)
+      .map((t) => Object.assign({}, t, { _corridor: corridor }));
+    const messages = (data && data.S4Messages) || [];
+    return { corridor, trips, messages };
+  }
+
+  // Alerts repeat across corridors (the same construction notice comes back
+  // on every feed that touches it) — dedupe by message text so the ticker
+  // doesn't loop through the same line 7 times.
+  function dedupeMessages(messages) {
+    const seen = new Set();
+    const out = [];
+    for (const m of messages) {
+      const text = m && m.MsgText;
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      out.push(m);
+    }
+    return out;
+  }
+
+  async function fetchUnionPooledData() {
+    const results = await Promise.allSettled(
+      Object.entries(UNION_CORRIDOR_SERVICE_CODES).map(([corridor, code]) =>
+        fetchCorridorTrips(corridor, code),
+      ),
+    );
+
+    const trips = [];
+    const messages = [];
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        trips.push(...r.value.trips);
+        messages.push(...r.value.messages);
+      } else {
+        console.error("GO board: corridor fetch failed", r.reason);
+      }
+    }
+    return { trips, messages: dedupeMessages(messages) };
+  }
 
   // Sets the slot-1/slot-5 header text to match the selected station's
   // corridor. Only the "time" field is touched at these slots — they're
@@ -947,7 +989,7 @@
   }
 
   // Union needs every corridor's live trains, not just one — same
-  // Promise.allSettled pattern used throughout this file, so one
+  // Promise.allSettled pattern as fetchUnionPooledData() above, so one
   // flaky corridor doesn't block the rest.
   async function fetchAllTripLocations() {
     const codes =
@@ -1584,16 +1626,7 @@
       stopsEl.classList.toggle("gts-row-cancelled", !!trip.TripCancelled);
 
     if (platformEl || platformTimeEl) {
-      // _primarySource (set only by mapMetrolinxUnionTrip) suppresses the
-      // muted/italic "unconfirmed" look and the "Info in X min" countdown
-      // specifically — Union has no working GoTracker source at all, so
-      // this Metrolinx feed is its normal/expected data, not a speculative
-      // fallback the way it still is on every other page. Cascading delay
-      // itself is untouched by this — it's computed separately up in
-      // applyCascadingDelay() and stays keyed on isUnconfirmedFutureTrip()
-      // alone, so Union rows still get pushed later by an overdue trip
-      // ahead of them; only the platform field's visual treatment differs.
-      const unconfirmed = isUnconfirmedFutureTrip(trip) && !trip._primarySource;
+      const unconfirmed = isUnconfirmedFutureTrip(trip);
 
       if (platformEl) {
         if (trip.TripCancelled) {
@@ -1849,21 +1882,6 @@
     if (!corridor) return null; // unmapped line code — drop rather than guess
     const trip = mapMetrolinxPlainTrip(item);
     trip._corridor = corridor;
-    // Union has no working GoTracker trip-list source at all (confirmed via
-    // a real, fully-cookied/headered browser request replicated through
-    // curl — StationStatusJSON genuinely returns an empty TripStatus for
-    // station=UN regardless of service code, not a bot-detection artifact).
-    // This Metrolinx feed is Union's PRIMARY source now, not a speculative
-    // gap-filler the way it still is on every other page.
-    //
-    // _future stays true (deliberately NOT overridden here) — cascading
-    // delay (applyCascadingDelay, gated on isUnconfirmedFutureTrip) still
-    // needs it to keep working for Union. _primarySource is a narrower
-    // flag: it only suppresses the platform field's muted/italic
-    // "unconfirmed" look and the "Info in X min" countdown text, which
-    // don't make sense to show on what's now Union's normal, expected
-    // source rather than a fallback — see updateRow()'s platform block.
-    trip._primarySource = true;
     return trip;
   }
 
@@ -1881,6 +1899,25 @@
     return items.map(mapMetrolinxUnionTrip).filter(Boolean); // drop unmapped-corridor trips
   }
 
+  // `upcoming` is Union's already-sorted, already-sliced-to-MAX_ROWS list —
+  // mutated in place, same pattern as the split-page filler below.
+  async function fillFutureUnionTrips(upcoming, existingTrips) {
+    const needed = MAX_ROWS - upcoming.length;
+    if (needed <= 0) return; // GoTracker already full — no Metrolinx call needed
+
+    try {
+      const existingNumbers = new Set(existingTrips.map((t) => t.TripNumber));
+      const future = (await fetchFutureUnionTrips())
+        .filter((t) => !existingNumbers.has(t.TripNumber))
+        .sort(byScheduledTime);
+
+      while (upcoming.length < MAX_ROWS && future.length) {
+        upcoming.push(future.shift());
+      }
+    } catch (err) {
+      console.error("GO board: Union future-trip tail fill failed", err);
+    }
+  }
 
   // --- Split-page tail-fill ---------------------------------------------
   async function fillFutureTrips(inbound, outbound, existingTrips) {
@@ -1919,21 +1956,11 @@
       let trips, messages;
 
       if (PAGE_MODE === "union") {
-        // Union has no working GoTracker trip-list source (StationStatusJSON
-        // returns an empty TripStatus for station=UN regardless of service
-        // code — confirmed via a real, fully-cookied/headered browser
-        // request replicated through curl, not a bot-detection artifact).
-        // Metrolinx's departures feed is Union's sole/primary trip source
-        // now, already outbound-only by construction. Live delay/status
-        // enrichment (tripDelayIndex, via GoTracker's separate TripLocation
-        // endpoint) is unaffected — that's independent of this trip list.
-        trips = await fetchFutureUnionTrips();
-        // No GoTracker S4Messages source for Union anymore either. The
-        // richer announcement ticker (data-role="announcement-title"/
-        // "-body", fed by the GO Transit CMS + Metrolinx service-update
-        // sources) already covers this — data-role="alert" just stays
-        // empty on this page now rather than pulling from a dead source.
-        messages = [];
+        // Union is a hub — pull all 7 corridors and merge, rather than one
+        // station+service pair like every other page.
+        const pooled = await fetchUnionPooledData();
+        trips = pooled.trips;
+        messages = pooled.messages;
       } else {
         const data = await fetchStationData();
         trips = ((data && data.TripStatus) || []).filter(isRealTrip);
@@ -1964,11 +1991,13 @@
         INBOUND_SLOTS.forEach((slot, i) => updateRow(slot, inbound[i]));
         OUTBOUND_SLOTS.forEach((slot, i) => updateRow(slot, outbound[i]));
       } else {
-        // Union page: every slot is a real trip row, sourced entirely from
-        // Metrolinx's departures feed now (see above) — already
-        // outbound-only by construction, so no direction filter or
-        // GoTracker-then-topup logic is needed here anymore.
+        // Union page: every slot is a real trip row, merged across every
+        // corridor, soonest first.
         const upcoming = trips.sort(byScheduledTime).slice(0, MAX_ROWS);
+
+        // Only reaches out to the secondary (Metrolinx) source if GoTracker
+        // didn't fill every row on its own.
+        await fillFutureUnionTrips(upcoming, trips);
 
         // Union's whole pooled list is one queue — an overdue Barrie trip
         // can just as easily be "in the way" of a Stouffville trip queued
